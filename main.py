@@ -5,7 +5,7 @@ import os
 from collections import defaultdict
 import pandas as pd
 
-def fetch_transactions(base_url, addresses):
+def fetch_transactions(base_url, addresses, max_buyers):
     page_size = 40  # Fixed page size
     address_signers = defaultdict(set)
     progress_bar = st.progress(0)
@@ -28,7 +28,7 @@ def fetch_transactions(base_url, addresses):
 
         valid_transactions = []
 
-        while len(valid_transactions) < 1000:
+        while len(valid_transactions) < max_buyers:  # Using user-specified max_buyers
             params = {
                 "address": address,
                 "page_size": page_size
@@ -74,7 +74,7 @@ def fetch_transactions(base_url, addresses):
                 st.error(f"Error processing address {address}: {str(e)}")
                 break
 
-            if len(valid_transactions) >= 100:
+            if len(valid_transactions) >= max_buyers:
                 break
 
     signer_to_addresses = defaultdict(list)
@@ -89,28 +89,41 @@ def main():
     
     st.markdown("""
     ### Instructions:
-    1. Enter wallet addresses (one per line) in the text area below
-    2. Click 'Start Scraping' to analyze common signers
-    3. Results will show which signers are common across different wallets
+    1. Enter coin addresses (one per line) in the text area below
+    2. Specify how many buyers to analyze per coin
+    3. Click 'Start Scraping' to analyze common signers
+    4. Results will show which signers are common across different wallets
     """)
     
-    wallet_addresses = st.text_area(
-        "Enter wallet addresses (one per line):",
-        height=200,
-        help="Enter each Solana wallet address on a new line"
-    )
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        wallet_addresses = st.text_area(
+            "Enter coin addresses (one per line):",
+            height=200,
+            help="Enter each Solana wallet address on a new line"
+        )
+    
+    with col2:
+        max_buyers = st.number_input(
+            "Buyers to analyze per coin",
+            min_value=1,
+            max_value=10000,
+            value=100,
+            help="Specify how many buyers to analyze for each coin"
+        )
     
     if st.button("Start Scraping"):
         if wallet_addresses.strip():
             addresses = [addr.strip() for addr in wallet_addresses.split('\n') if addr.strip()]
             
             if len(addresses) > 0:
-                st.info(f"Starting analysis for {len(addresses)} wallet addresses...")
+                st.info(f"Starting analysis for {len(addresses)} wallet addresses, analyzing {max_buyers} buyers per coin...")
                 
                 base_url = "https://api-v2.solscan.io/v2/account/transaction"
                 
                 with st.spinner("Analyzing wallet addresses..."):
-                    common_signers = fetch_transactions(base_url, addresses)
+                    common_signers = fetch_transactions(base_url, addresses, max_buyers)
                 
                 if common_signers:
                     st.success("Analysis complete!")

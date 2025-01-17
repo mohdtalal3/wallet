@@ -4,9 +4,9 @@ import json
 import os
 from collections import defaultdict
 import pandas as pd
-
+st.set_page_config(layout="wide")
 def fetch_transactions(base_url, addresses, max_buyers):
-    page_size = 40  # Fixed page size
+    page_size = 40
     address_signers = defaultdict(set)
     progress_bar = st.progress(0)
     status_text = st.empty()
@@ -28,7 +28,7 @@ def fetch_transactions(base_url, addresses, max_buyers):
 
         valid_transactions = []
 
-        while len(valid_transactions) < max_buyers:  # Using user-specified max_buyers
+        while len(valid_transactions) < max_buyers:
             params = {
                 "address": address,
                 "page_size": page_size
@@ -89,17 +89,17 @@ def main():
     
     st.markdown("""
     ### Instructions:
-    1. Enter coin addresses (one per line) in the text area below
+    1. Enter wallet addresses (one per line) in the text area below
     2. Specify how many buyers to analyze per coin
     3. Click 'Start Scraping' to analyze common signers
-    4. Results will show which signers are common across different wallets
+    4. Click on signers to view details and open GMGn.ai analysis
     """)
     
     col1, col2 = st.columns([3, 1])
     
     with col1:
         wallet_addresses = st.text_area(
-            "Enter coin addresses (one per line):",
+            "Enter wallet addresses (one per line):",
             height=200,
             help="Enter each Solana wallet address on a new line"
         )
@@ -108,7 +108,7 @@ def main():
         max_buyers = st.number_input(
             "Buyers to analyze per coin",
             min_value=1,
-            max_value=10000,
+            max_value=1000,
             value=100,
             help="Specify how many buyers to analyze for each coin"
         )
@@ -128,33 +128,19 @@ def main():
                 if common_signers:
                     st.success("Analysis complete!")
                     
-                    # Create a more detailed display format with individual columns
+                    # Create CSV data for download
                     display_data = []
-                    max_wallets = max(len(addrs) for addrs in common_signers.values())
-                    
                     for signer, linked_addresses in common_signers.items():
-                        # Create a dictionary for each signer
-                        row_data = {
+                        display_data.append({
                             "Signer": signer,
-                            "Number of Connected Wallets": len(linked_addresses)
-                        }
-                        
-                        # Add individual wallet columns
-                        for i in range(max_wallets):
-                            wallet_num = i + 1
-                            row_data[f"Wallet {wallet_num}"] = linked_addresses[i] if i < len(linked_addresses) else ""
-                        
-                        display_data.append(row_data)
+                            "Number of Connected Wallets": len(linked_addresses),
+                            "Connected Wallets": ", ".join(linked_addresses)
+                        })
                     
-                    # Convert to DataFrame
                     df = pd.DataFrame(display_data)
-                    
-                    # Display results
-                    st.subheader("Common Signers Analysis")
-                    st.dataframe(df)
-                    
-                    # Download option
                     csv = df.to_csv(index=False)
+                    
+                    # Download button at the top
                     st.download_button(
                         label="Download results as CSV",
                         data=csv,
@@ -162,13 +148,37 @@ def main():
                         mime="text/csv"
                     )
                     
-                    # Additional detailed view
-                    st.subheader("Detailed Analysis")
+                    # Detailed expandable view
+                    st.subheader("Analysis Results")
                     for signer, linked_addresses in common_signers.items():
-                        with st.expander(f"Signer: {signer}"):
-                            st.write("Connected to the following wallets:")
-                            for idx, addr in enumerate(linked_addresses, 1):
-                                st.code(f"Wallet {idx}: {addr}")
+                        with st.expander(f"Signer: {signer} (Connected to {len(linked_addresses)} wallets)"):
+                            col1, col2 = st.columns([4, 1])
+                            
+                            with col1:
+                                st.write("Connected to the following wallets:")
+                                for idx, addr in enumerate(linked_addresses, 1):
+                                    st.code(f"Wallet {idx}: {addr}")
+                            
+                            with col2:
+                                gmgn_url = f"https://gmgn.ai/sol/address/{signer}"
+                                st.markdown(f'''
+                                    <a href="{gmgn_url}" target="_blank">
+                                        <button style="
+                                            background-color: #4CAF50;
+                                            border: none;
+                                            color: white;
+                                            padding: 10px 20px;
+                                            text-align: center;
+                                            text-decoration: none;
+                                            display: inline-block;
+                                            font-size: 14px;
+                                            margin: 4px 2px;
+                                            cursor: pointer;
+                                            border-radius: 4px;">
+                                            Open in GMGn.ai
+                                        </button>
+                                    </a>
+                                    ''', unsafe_allow_html=True)
                 else:
                     st.warning("No common signers found across the provided addresses.")
             else:

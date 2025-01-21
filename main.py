@@ -95,9 +95,8 @@ def process_ethereum(addresses, max_transactions):
                         st.write("Connected to the following wallets:")
                         for idx, wallet in enumerate(wallets, 1):
                             st.code(f"Wallet {idx}: {wallet}")
-                    
                     with col2:
-                        etherscan_url = f"https://gmgn.ai/sol/address/{addr}"
+                        etherscan_url = f"https://app.zerion.io/{addr}"
                         st.markdown(f'''
                             <a href="{etherscan_url}" target="_blank">
                                 <button style="
@@ -112,7 +111,7 @@ def process_ethereum(addresses, max_transactions):
                                     margin: 4px 2px;
                                     cursor: pointer;
                                     border-radius: 4px;">
-                                    Open in Etherscan
+                                    Open in Zerion
                                 </button>
                             </a>
                             ''', unsafe_allow_html=True)

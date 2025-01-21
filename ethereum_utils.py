@@ -116,7 +116,7 @@ def scrape_multiple_wallets(wallet_addresses, max_transactions, progress_bar, st
 
     for idx, wallet in enumerate(wallet_addresses):
         update_progress(progress_bar, status_text, idx + 1, len(wallet_addresses),
-                       f"Processing wallet {idx + 1} of {len(wallet_addresses)}: {wallet}")
+                        f"Processing wallet {idx + 1} of {len(wallet_addresses)}: {wallet}")
         
         wallet_transactions = scrape_transactions_for_wallet(wallet, max_transactions, progress_bar, status_text)
         all_transactions.extend(wallet_transactions)
@@ -124,6 +124,11 @@ def scrape_multiple_wallets(wallet_addresses, max_transactions, progress_bar, st
         for txn in wallet_transactions:
             wallet_from_addresses[txn["From Address"]].add(wallet)
 
+    # Filter common_from_addresses
     common_from_addresses = {addr: wallets for addr, wallets in wallet_from_addresses.items() if len(wallets) > 1}
+
+    # Drop the first row from common_from_addresses
+    if common_from_addresses:
+        common_from_addresses = dict(list(common_from_addresses.items())[1:])
 
     return all_transactions, common_from_addresses
